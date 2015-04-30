@@ -48,10 +48,6 @@ class CheckersBoard
     return position.all? { |coord| coord.between?(0,7) }
   end
 
-  def move_piece(start_pos, end_pos)
-    self[start_pos]
-  end
-
   def occupied_by?(position)
     square = self[position]
     return square.color if square

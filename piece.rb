@@ -1,3 +1,5 @@
+require_relative 'board.rb'
+
 class CheckersPiece
 
   attr_accessor :position
@@ -12,6 +14,13 @@ class CheckersPiece
     @color    = color
     @board    = board
     @avatar   = ' ◉ '.colorize(color)
+  end
+
+  def move_to(new_position)
+    @board[@position] = nil
+    @position = new_position
+    @board[@position] = self
+    promote! if should_be_promoted
   end
 
   def possible_jumps
@@ -40,9 +49,16 @@ class CheckersPiece
     @avatar = ' ♛ '.colorize(color)
   end
 
-
-
   #private
+
+    def end_rows
+      end_row_index = (@color == :blue ? 7 : 0)
+      (0...8).map { |col| [col, end_row_index]}
+    end
+
+    def jump_piece(modifier)
+      modify_position(slide_piece(modifier), modifier)
+    end
 
     def move_directions
       return FORWARD + BACKWARD if @king
@@ -53,19 +69,33 @@ class CheckersPiece
       [position, modifier].transpose.map { |coord| coord.inject(:+) }
     end
 
-    def slide_piece(modifier)
-      modify_position(modifier)
+    def other_color
+      @color == :red ? :blue : :red
     end
 
-    def jump_piece(modifier)
-      modify_position(slide_piece(modifier), modifier)
+    def should_be_promoted
+      end_rows.include?(@position)
+    end
+
+    def slide_piece(modifier)
+      modify_position(modifier)
     end
 
     def slide_moves
       move_directions.map { |direction| slide_piece(direction) }
     end
 
-    def other_color
-      @color == :red ? :blue : :red
-    end
+end
+
+if __FILE__ == $PROGRAM_NAME
+  a = CheckersPiece.new(:blue, [0,0], CheckersBoard.new)
+  puts a.king
+  b = CheckersPiece.new(:red,  [0,7], CheckersBoard.new )
+  puts b.king
+  a.move_to([5, 7])
+  b.move_to([2, 0])
+  print "#{a.end_rows} \n"
+  print "#{b.end_rows} \n"
+  puts a.king
+  puts b.king
 end

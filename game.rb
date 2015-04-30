@@ -1,4 +1,5 @@
 require_relative 'board.rb'
+require_relative 'errors.rb'
 require 'io/console'
 
 
@@ -11,11 +12,13 @@ class CheckersGame
     @board        = CheckersBoard.new
     @turn         = :blue
     @chosen_piece = nil
+    @jumping      = false
   end
 
   def play
     until game_is_won
       do_input(STDIN.getch)
+      @board.display_for(@turn)
     end
   end
 
@@ -40,28 +43,55 @@ class CheckersGame
     end
   end
 
-  def move_piece_to(end_position)
-    if @chosen_piece.possible_jumps.include?(end_position)
-      @chosen_piece.jump_to(end_position)
-    elsif @chosen_piece.possible_slides.include?(end_position)
-      @chosen_piece.slide_to(end_position)
-      @chosen_piece = nil
-      end_turn
-    else
-      raise "IllegalMoveError"
-    end
+  def exit_game
+    #save current game
+    exit
+  end
 
+  def make_move
+    if @jumping
+      make_jump_move
+    else
+      make_jump_move  if @chosen_piece.possible_jumps.include?(@highlight)
+      make_slide_move if @chosen_piece.possible_slides.include?(@highlight)
+      raise IllegalMoveError.new("You can't put that piece there!")
+    end
   end
 
   def select_piece
     if @chosen_piece.nil?
-      @chosen_piece = @board[@highlight]
+      choose_piece
     else
-      move_piece_to(@highlight)
+      make_move
     end
   end
 
   #private
+    def choose_piece
+      if @board.occupied_by?(@board.highlight)
+        @chosen_piece = @board[@board.highlight]
+      else
+        raise IllegalMoveError.new("There's no piece to choose!")
+      end
+    end
+
+    def make_jump_move
+      if @jumping && @chosen_piece.possible_jumps.empty?
+        @chosen_piece = nil
+        @jumping = false
+        end_turn
+      else
+        @chosen_piece.move_to(@board.highlight)
+        @jumping = true
+      end
+    end
+
+    def make_slide_move
+      @chosen_piece.move_to(@board.highlight)
+      @chosen_piece = nil
+      end_turn
+    end
+
     def end_turn
       @turn = (@turn == :red ? :blue : :red)
     end
