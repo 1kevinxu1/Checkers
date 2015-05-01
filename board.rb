@@ -112,9 +112,3 @@ class CheckersBoard
       print "\n"
     end
 end
-
-if __FILE__ == $PROGRAM_NAME
-  b = CheckersBoard.new
-  b.display_for(:blue)
-  b.display_for(:red)
-end
