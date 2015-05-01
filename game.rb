@@ -4,9 +4,7 @@ require 'io/console'
 
 
 class CheckersGame
-  attr_reader :board
-
-  KEY_COMMANDS = {
+  attr_reader :board, :turn
 
   def initialize()
     @board        = CheckersBoard.new
@@ -17,9 +15,17 @@ class CheckersGame
 
   def play
     until game_is_won
-      do_input(STDIN.getch)
-      @board.display_for(@turn)
+      begin
+        @board.display_for(:blue)
+        print "It is currently #{turn}'s turn! \n"
+        do_input(STDIN.getch)
+      rescue IllegalMoveError => e
+        puts e
+        retry
+      end
     end
+    print
+
   end
 
   def game_is_won
@@ -28,13 +34,13 @@ class CheckersGame
 
   def do_input(key)
     case key
-    when "w", "\e[A"
+    when "w"
       @board.set_highlight(:up)
-    when "a", "\e[D"
+    when "a"
       @board.set_highlight(:left)
-    when "s", "\e[B"
+    when "s"
       @board.set_highlight(:down)
-    when "d", "\e[C"
+    when "d"
       @board.set_highlight(:right)
     when "\r"
       select_piece
@@ -52,14 +58,19 @@ class CheckersGame
     if @jumping
       make_jump_move
     else
-      make_jump_move  if @chosen_piece.possible_jumps.include?(@highlight)
-      make_slide_move if @chosen_piece.possible_slides.include?(@highlight)
-      raise IllegalMoveError.new("You can't put that piece there!")
+      if @chosen_piece.possible_jumps.include?(@board.highlight)
+        make_jump_move
+      elsif @chosen_piece.possible_slides.include?(@board.highlight)
+        make_slide_move
+      else
+        raise IllegalMoveError.new("You can't put that piece there!")
+      end
     end
   end
 
   def select_piece
     if @chosen_piece.nil?
+      print "you have chosen a piece!\n"
       choose_piece
     else
       make_move
@@ -68,32 +79,41 @@ class CheckersGame
 
   #private
     def choose_piece
-      if @board.occupied_by?(@board.highlight)
-        @chosen_piece = @board[@board.highlight]
+      if @board.occupied_by?(@board.highlight) == @turn
+        select_valid_piece(@board.highlight)
       else
-        raise IllegalMoveError.new("There's no piece to choose!")
+        raise IllegalMoveError.new("That's not a piece you can choose!")
       end
     end
 
+    def end_turn
+      @turn = (@turn == :red ? :blue : :red)
+      @jumping = false
+      @chosen_piece = nil
+    end
+
     def make_jump_move
-      if @jumping && @chosen_piece.possible_jumps.empty?
-        @chosen_piece = nil
-        @jumping = false
+      @chosen_piece.move_to(@board.highlight)
+      @jumping = true
+      print "move made to #{@board.highlight}!!"
+      if @chosen_piece.possible_jumps.empty?
         end_turn
       else
-        @chosen_piece.move_to(@board.highlight)
-        @jumping = true
+        print "#{@turn} is currently jumping! Select your next space!"
       end
     end
 
     def make_slide_move
       @chosen_piece.move_to(@board.highlight)
-      @chosen_piece = nil
       end_turn
     end
 
-    def end_turn
-      @turn = (@turn == :red ? :blue : :red)
+    def select_valid_piece(position)
+      if !@board[position].all_valid_moves.empty?
+        @chosen_piece = @board[position]
+      else
+        raise IllegalMoveError.new("That piece has no available moves!")
+      end
     end
 
 end
@@ -101,6 +121,5 @@ end
 
 if __FILE__ == $PROGRAM_NAME
   game = CheckersGame.new
-  game.board.display
   game.play
 end

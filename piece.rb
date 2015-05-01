@@ -1,5 +1,3 @@
-require_relative 'board.rb'
-
 class CheckersPiece
 
   attr_accessor :position
@@ -16,11 +14,18 @@ class CheckersPiece
     @avatar   = ' ◉ '.colorize(color)
   end
 
+  def all_valid_moves
+    possible_jumps + possible_slides
+  end
+
   def move_to(new_position)
     @board[@position] = nil
+    jumped_over_piece = average_position_of(@position, new_position)
+    @board[jumped_over_piece] = nil
     @position = new_position
     @board[@position] = self
     promote! if should_be_promoted
+    return
   end
 
   def possible_jumps
@@ -30,7 +35,7 @@ class CheckersPiece
       next if !@board.in_range?(slide_move)
       if @board.occupied_by?(slide_move) == other_color
         jump_move = jump_piece(direction)
-        jumps << jump_move if @board.in_range?(jump_move)
+        jumps << jump_move if @board.in_range?(jump_move) && @board.unoccupied?(jump_move)
       end
     end
     jumps
@@ -44,12 +49,12 @@ class CheckersPiece
     #unoccupied_slides.include?(end_position) ? return true : return false
   end
 
-  def promote!
-    @king   = true
-    @avatar = ' ♛ '.colorize(color)
-  end
-
   #private
+    def average_position_of(position_one, position_two)
+      [position_one, position_two].transpose.map do |coord|
+        coord.inject(:+) / 2
+      end
+    end
 
     def end_rows
       end_row_index = (@color == :blue ? 7 : 0)
@@ -73,6 +78,11 @@ class CheckersPiece
       @color == :red ? :blue : :red
     end
 
+    def promote!
+      @king   = true
+      @avatar = ' ♛ '.colorize(color)
+    end
+
     def should_be_promoted
       end_rows.include?(@position)
     end
@@ -85,17 +95,4 @@ class CheckersPiece
       move_directions.map { |direction| slide_piece(direction) }
     end
 
-end
-
-if __FILE__ == $PROGRAM_NAME
-  a = CheckersPiece.new(:blue, [0,0], CheckersBoard.new)
-  puts a.king
-  b = CheckersPiece.new(:red,  [0,7], CheckersBoard.new )
-  puts b.king
-  a.move_to([5, 7])
-  b.move_to([2, 0])
-  print "#{a.end_rows} \n"
-  print "#{b.end_rows} \n"
-  puts a.king
-  puts b.king
 end
