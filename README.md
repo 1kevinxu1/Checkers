@@ -8,4 +8,4 @@ A CLI-interface implementation of the classic game of Checkers, built in pure Ru
 ## Try it out!
 To play, just clone the repo onto your local drive, and navigate to the file tree. From there, run ruby game.rb and have fun! Use the WASD keys to navigate. Press enter to select a piece, and enter again on a different square to move that piece. Press q to quit at any time.
 
-[log-in]: Checkers.png
+[checkers]: Checkers.png
